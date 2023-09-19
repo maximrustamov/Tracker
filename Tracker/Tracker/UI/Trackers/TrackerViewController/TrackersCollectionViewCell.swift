@@ -52,8 +52,10 @@ final class TrackersCollectionViewCell: UICollectionViewCell {
     
     private lazy var checkButton: UIButton = {
         let checkButton = UIButton()
-        checkButton.setImage(UIImage(named: "plus"), for: .normal)
+        let image = UIImage(named: "GreenPlus")
+        checkButton.setImage(image, for: .normal)
         checkButton.addTarget(self, action: #selector(didTapCheckButton), for: .touchUpInside)
+        checkButton.backgroundColor = .white
         checkButton.tintColor = .white
         checkButton.layer.cornerRadius = 17
         checkButton.translatesAutoresizingMaskIntoConstraints = false
@@ -72,10 +74,10 @@ final class TrackersCollectionViewCell: UICollectionViewCell {
         
         NSLayoutConstraint.activate([
             
-            trackerView.heightAnchor.constraint(equalToConstant: 90),
-            trackerView.widthAnchor.constraint(equalToConstant: 167),
             trackerView.topAnchor.constraint(equalTo: contentView.topAnchor),
             trackerView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
+            trackerView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -58),
+            trackerView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
             
             emojiView.heightAnchor.constraint(equalToConstant: 24),
             emojiView.widthAnchor.constraint(equalToConstant: 24),
@@ -90,7 +92,7 @@ final class TrackersCollectionViewCell: UICollectionViewCell {
             trackerNameLabel.leadingAnchor.constraint(equalTo: trackerView.leadingAnchor, constant: 12),
             trackerNameLabel.heightAnchor.constraint(equalToConstant: 34),
             
-            checkButton.topAnchor.constraint(equalTo: trackerView.bottomAnchor, constant: 8),
+            checkButton.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -16),
             checkButton.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -12),
             checkButton.heightAnchor.constraint(equalToConstant: 34),
             checkButton.widthAnchor.constraint(equalToConstant: 34 ),
@@ -125,14 +127,19 @@ final class TrackersCollectionViewCell: UICollectionViewCell {
         let mod100 = completedCount % 100
         let not10To20 = mod100 < 10 || mod100 > 20
         var str = "\(completedCount) "
-        
         trackerId = id
         trackerNameLabel.text = name
         trackerView.backgroundColor = color
         checkButton.backgroundColor = color
         emojiLabel.text = emoji
         isCompletedToday = isCompleted
-        checkButton.setImage(isCompletedToday ? UIImage(systemName: "checkmark")! : UIImage(systemName: "plus")!, for: .normal)
+        checkButton.setImage(isCompletedToday ? UIImage(systemName: "checkmark")! : UIImage(systemName: "GreenPlus")!, for: .normal)
+        if isCompletedToday == true {
+            checkButton.alpha = 0.5
+        } else {
+            checkButton.alpha = 1
+        }
+        
         checkButton.isEnabled = isEnabled
         
         if completedCount == 0 {
@@ -145,5 +152,13 @@ final class TrackersCollectionViewCell: UICollectionViewCell {
             str += "дней"
         }
         resultLabel.text = str
+    }
+}
+
+extension UIImage {
+    func withAlpha(_ a: CGFloat) -> UIImage {
+        return UIGraphicsImageRenderer(size: size, format: imageRendererFormat).image { (_) in
+            draw(in: CGRect(origin: .zero, size: size), blendMode: .normal, alpha: a)
+        }
     }
 }

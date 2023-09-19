@@ -19,10 +19,11 @@ class TrackersSupplementaryView: UICollectionReusableView {
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         
         NSLayoutConstraint.activate([
+          
             titleLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 12),
             titleLabel.topAnchor.constraint(equalTo: topAnchor, constant: 24),
             titleLabel.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -12),
-            titleLabel.heightAnchor.constraint(equalToConstant: 18)
+            titleLabel.heightAnchor.constraint(equalToConstant: 20)
         ])
     }
     

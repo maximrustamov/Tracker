@@ -1,8 +1,8 @@
 import UIKit
 
-final class EmojiColorCollectionViewCell: UICollectionViewCell {
+final class EmojiAndColorCollectionViewCell: UICollectionViewCell {
     
-    static let identifier = "emojiColorCollectionViewCell"
+    static let identifier = "emojiAndColorCollectionViewCell"
     
     lazy var emojiLabel: UILabel = {
         let emojiLabel = UILabel()

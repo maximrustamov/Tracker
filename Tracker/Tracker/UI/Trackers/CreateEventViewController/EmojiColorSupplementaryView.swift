@@ -1,6 +1,6 @@
 import UIKit
 
-class EmojiColorSupplementaryView: UICollectionReusableView {
+class EmojiAndColorSupplementaryView: UICollectionReusableView {
     
     static let identifier = "header"
     

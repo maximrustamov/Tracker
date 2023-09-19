@@ -4,14 +4,14 @@ final class TrackersViewController: UIViewController {
     private let trackerCategoryStore = TrackerCategoryStore()
     private let trackerRecordStore = TrackerRecordStore()
     
-
-    private var categories: [TrackerCategory] = []//MockData.categories
+    //список категорий и вложенных в них трекеров
+    private var categories: [TrackerCategoryModel] = []//MockData.categories
     
-
+    //трекеры, которые были «выполнены» в выбранную дату
     private var completedTrackers: [TrackerRecord] = []
     
-
-    private var visibleCategories: [TrackerCategory] = []
+    //отображается при поиске и/или изменении дня недели
+    private var visibleCategories: [TrackerCategoryModel] = []
     private var currentDate: Int?
     private var searchText: String = ""
     private var widthAnchor: NSLayoutConstraint?
@@ -25,7 +25,7 @@ final class TrackersViewController: UIViewController {
     private lazy var imageView: UIImageView = {
         let imageView = UIImageView()
         imageView.translatesAutoresizingMaskIntoConstraints = false
-        imageView.image = UIImage(named: "star")
+        imageView.image = UIImage(named: "Star")
         return imageView
     }()
     
@@ -40,17 +40,25 @@ final class TrackersViewController: UIViewController {
     
     private lazy var datePicker = UIDatePicker()
     
-    private lazy var searchTextField: UISearchTextField = {
-        let searchTextField = UISearchTextField()
+    private lazy var searchTextField: UITextField = {
+        let searchTextField = UITextField()
         searchTextField.placeholder = "Поиск"
         searchTextField.textColor = .ypBlack
         searchTextField.font = .systemFont(ofSize: 17)
         searchTextField.backgroundColor = .searchColor
         searchTextField.layer.cornerRadius = 10
+        searchTextField.indent(size: 30)
         searchTextField.translatesAutoresizingMaskIntoConstraints = false
         searchTextField.addTarget(self, action: #selector(textFieldChanged), for: .editingChanged)
         searchTextField.delegate = self
         return searchTextField
+    }()
+    
+    private lazy var loupeImageView: UIImageView = {
+        let imageView = UIImageView()
+        imageView.translatesAutoresizingMaskIntoConstraints = false
+        imageView.image = UIImage(named: "loupe")
+        return imageView
     }()
     
     private lazy var cancelEditingButton: UIButton = {
@@ -78,11 +86,11 @@ final class TrackersViewController: UIViewController {
         super.viewDidLoad()
         view.backgroundColor = .white
         setDayOfWeek()
-        updateCategories()
+        updateCategories(with: trackerCategoryStore.trackerCategories)
         completedTrackers = try! self.trackerRecordStore.fetchTrackerRecord()
         makeNavBar()
         addSubviews()
-        setupLayoutsearchTextFieldAndButton()
+        setupLayoutSearchTextFieldAndButton()
         setupLayout()
         trackerCategoryStore.delegate = self
     }
@@ -109,12 +117,12 @@ final class TrackersViewController: UIViewController {
         let components = Calendar.current.dateComponents([.weekday], from: sender.date)
         if let day = components.weekday {
             currentDate = day
-            updateCategories()
+            updateCategories(with: trackerCategoryStore.trackerCategories)
         }
     }
     
     @objc func addTracker() {
-        let trackersVC = CreateTrackerVC()
+        let trackersVC = RegularOrIrregularEventVC()
         trackersVC.delegate = self
         present(trackersVC, animated: true)
     }
@@ -124,18 +132,18 @@ final class TrackersViewController: UIViewController {
         widthAnchor?.constant = 0
         setupLayout()
         searchText = ""
-        updateCategories()
     }
     
     private func addSubviews() {
         view.addSubview(imageView)
         view.addSubview(label)
         view.addSubview(searchTextField)
+        searchTextField.addSubview(loupeImageView)
         view.addSubview(cancelEditingButton)
         view.addSubview(collectionView)
     }
     
-    private func setupLayoutsearchTextFieldAndButton() {
+    private func setupLayoutSearchTextFieldAndButton() {
         widthAnchor = cancelEditingButton.widthAnchor.constraint(equalToConstant: 0)
         
         NSLayoutConstraint.activate([
@@ -143,6 +151,11 @@ final class TrackersViewController: UIViewController {
             searchTextField.trailingAnchor.constraint(equalTo: cancelEditingButton.leadingAnchor, constant: -5),
             searchTextField.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 7),
             searchTextField.heightAnchor.constraint(equalToConstant: 36),
+            
+            loupeImageView.heightAnchor.constraint(equalToConstant: 16),
+            loupeImageView.widthAnchor.constraint(equalToConstant: 16),
+            loupeImageView.leadingAnchor.constraint(equalTo: searchTextField.leadingAnchor, constant: 8),
+            loupeImageView.centerYAnchor.constraint(equalTo: searchTextField.centerYAnchor),
             
             cancelEditingButton.centerXAnchor.constraint(equalTo: searchTextField.centerXAnchor),
             cancelEditingButton.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -16),
@@ -175,10 +188,9 @@ final class TrackersViewController: UIViewController {
         currentDate = components.weekday
     }
     
-    private func updateCategories() {
-        var newCategories: [TrackerCategory] = []
-        visibleCategories = trackerCategoryStore.trackerCategories
-        for category in visibleCategories {
+    private func updateCategories(with categories: [TrackerCategoryModel]) {
+        var newCategories: [TrackerCategoryModel] = []
+        for category in categories {
             var newTrackers: [Tracker] = []
             for tracker in category.visibleTrackers(filterString: searchText) {
                 guard let schedule = tracker.schedule else { return }
@@ -188,7 +200,7 @@ final class TrackersViewController: UIViewController {
                 }
             }
             if newTrackers.count > 0 {
-                let newCategory = TrackerCategory(name: category.name, trackers: newTrackers)
+                let newCategory = TrackerCategoryModel(name: category.name, trackers: newTrackers)
                 newCategories.append(newCategory)
             }
         }
@@ -247,7 +259,7 @@ extension TrackersViewController: UICollectionViewDelegateFlowLayout {
         layout collectionViewLayout: UICollectionViewLayout,
         sizeForItemAt indexPath: IndexPath
     ) -> CGSize {
-        return CGSize(width: 167, height: 148)
+        return CGSize(width: (self.collectionView.bounds.width - 7) / 2, height: 148)
     }
     
     func collectionView(
@@ -255,7 +267,7 @@ extension TrackersViewController: UICollectionViewDelegateFlowLayout {
         layout collectionViewLayout: UICollectionViewLayout,
         minimumLineSpacingForSectionAt section: Int
     ) -> CGFloat {
-        return 10
+        return 0
     }
     
     func collectionView(
@@ -263,7 +275,7 @@ extension TrackersViewController: UICollectionViewDelegateFlowLayout {
         layout collectionViewLayout: UICollectionViewLayout,
         minimumInteritemSpacingForSectionAt section: Int
     ) -> CGFloat {
-        return 10
+        return 7
     }
     
     func collectionView(
@@ -298,13 +310,13 @@ extension TrackersViewController: UICollectionViewDelegateFlowLayout {
     }
 }
 
-extension TrackersViewController: CreateTrackerVCDelegate {
+extension TrackersViewController: RegularOrIrregularEventVCDelegate {
     
     func createTracker(
         _ tracker: Tracker, categoryName: String
     ) {
-        var categoryToUpdate: TrackerCategory?
-        let categories: [TrackerCategory] = trackerCategoryStore.trackerCategories
+        var categoryToUpdate: TrackerCategoryModel?
+        let categories: [TrackerCategoryModel] = trackerCategoryStore.trackerCategories
         for i in 0..<categories.count {
             if categories[i].name == categoryName {
                 categoryToUpdate = categories[i]
@@ -313,11 +325,10 @@ extension TrackersViewController: CreateTrackerVCDelegate {
         if categoryToUpdate != nil {
             try? trackerCategoryStore.addTracker(tracker, to: categoryToUpdate!)
         } else {
-            let newCategory = TrackerCategory(name: categoryName, trackers: [tracker])
+            let newCategory = TrackerCategoryModel(name: categoryName, trackers: [tracker])
             categoryToUpdate = newCategory
             try? trackerCategoryStore.addNewTrackerCategory(categoryToUpdate!)
         }
-        updateCategories()
         dismiss(animated: true)
     }
 }
@@ -326,11 +337,10 @@ extension TrackersViewController {
     
     @objc func textFieldChanged() {
         searchText = searchTextField.text ?? ""
-        imageView.image = searchText.isEmpty ? UIImage(named: "star") : UIImage(named: "notFound")
+        imageView.image = searchText.isEmpty ? UIImage(named: "Star") : UIImage(named: "NotFound")
         label.text = searchText.isEmpty ? "Что будем отслеживать?" : "Ничего не найдено"
         widthAnchor?.constant = 85
-        visibleCategories = trackerCategoryStore.predicateFetch(nameTracker: searchText)
-        collectionView.reloadData()
+        updateCategories(with: trackerCategoryStore.predicateFetch(nameTracker: searchText))
     }
 }
 
@@ -342,7 +352,7 @@ extension TrackersViewController: TrackersCollectionViewCellDelegate {
             record.date.yearMonthDayComponents == datePicker.date.yearMonthDayComponents
         }) {
             completedTrackers.remove(at: index)
-            try? trackerRecordStore.deleteTrackerRecord(TrackerRecord(idTracker: id, date: datePicker.date))
+            try? trackerRecordStore.deleteTrackerRecord(with: id)
         } else {
             completedTrackers.append(TrackerRecord(idTracker: id, date: datePicker.date))
             try? trackerRecordStore.addNewTrackerRecord(TrackerRecord(idTracker: id, date: datePicker.date))
@@ -358,13 +368,14 @@ extension TrackersViewController: UITextFieldDelegate {
     }
     
     func textFieldDidEndEditing(_ textField: UITextField) {
-        setupLayoutsearchTextFieldAndButton()
+        setupLayoutSearchTextFieldAndButton()
     }
 }
 
 extension TrackersViewController: TrackerCategoryStoreDelegate {
+    
     func store(_ store: TrackerCategoryStore, didUpdate update: TrackerCategoryStoreUpdate) {
-        visibleCategories = trackerCategoryStore.trackerCategories
+        updateCategories(with: trackerCategoryStore.trackerCategories)
         collectionView.reloadData()
     }
 }

@@ -7,7 +7,7 @@ protocol ScheduleVCDelegate: AnyObject {
 class ScheduleVC: UIViewController {
     
     public weak var delegate: ScheduleVCDelegate?
-    private var schedule: [WeekDay] = []
+    var schedule: [WeekDay] = []
     private lazy var label: UILabel = {
         let label = UILabel()
         label.textColor = .black
@@ -78,7 +78,6 @@ class ScheduleVC: UIViewController {
     }
     
     private func setupLayout() {
-        //heightTableView = view.bounds.height - 200
         NSLayoutConstraint.activate([
             label.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             label.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 27),
@@ -117,10 +116,12 @@ extension ScheduleVC: UITableViewDataSource {
         guard let weekDayCell = tableView.dequeueReusableCell(withIdentifier: WeekDayTableViewCell.identifier) as? WeekDayTableViewCell else {
             return UITableViewCell()
         }
+        let weekDay = WeekDay.allCases[indexPath.row]
         weekDayCell.delegate = self
         weekDayCell.contentView.backgroundColor = .bgColor
         weekDayCell.label.text = WeekDay.allCases[indexPath.row].rawValue
-        weekDayCell.weekDay = WeekDay.allCases[indexPath.row]
+        weekDayCell.weekDay = weekDay
+        weekDayCell.switchCell.isOn = schedule.contains(weekDay)
         if indexPath.row == 6 {
             weekDayCell.separatorInset = UIEdgeInsets(top: 0, left: 0, bottom: 0, right: .greatestFiniteMagnitude)
         } else {

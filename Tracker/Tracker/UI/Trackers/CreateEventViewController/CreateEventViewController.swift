@@ -19,7 +19,6 @@ protocol CreateEventVCDelegate: AnyObject {
 }
 
 class CreateEventVC: UIViewController {
-    
     private let emojies = [
         "🙂", "😻", "🌺", "🐶", "❤️", "😱", "😇", "😡", "🥶", "🤔", "🙌", "🍒",
         "🍔", "🥦", "🏓", "🥇", "🎸", "🏝"
@@ -38,7 +37,12 @@ class CreateEventVC: UIViewController {
             updateCreateEventButton()
         }
     }
-    public var categorySubTitle = ""
+    
+    private var category: TrackerCategoryModel? = nil {
+        didSet {
+            updateCreateEventButton()
+        }
+    }
     private var selectedEmojiCell: IndexPath? = nil
     private var selectedColorCell: IndexPath? = nil
     private var selectedEmoji: String = "" {
@@ -53,6 +57,10 @@ class CreateEventVC: UIViewController {
     }
     private var scheduleSubTitle: String = ""
     private var dayOfWeek: [String] = []
+    
+    var selectedCategory: TrackerCategoryModel?
+    var categorySubTitle: String = ""
+    
     public weak var delegate: CreateEventVCDelegate?
     
     private lazy var scrollView: UIScrollView = {
@@ -139,31 +147,22 @@ class CreateEventVC: UIViewController {
     }()
     
     private lazy var categoryButtonTitle: UILabel = {
-    let label = UILabel()
-    label.textColor = .black
-    label.text = "Категория"
-    label.font = .systemFont(ofSize: 17)
-    label.translatesAutoresizingMaskIntoConstraints = false
-    return label
-    }()
-    private lazy var categoryButtonTitleSecond: UILabel = {
-    let label = UILabel()
-    label.textColor = .black
-    label.text = "Категория"
-    label.font = .systemFont(ofSize: 17)
-    label.translatesAutoresizingMaskIntoConstraints = false
-    return label
+        let label = UILabel()
+        label.textColor = .black
+        label.text = "Категория"
+        label.font = .systemFont(ofSize: 16)
+        label.translatesAutoresizingMaskIntoConstraints = false
+        return label
     }()
     
     private lazy var categoryButtonSubTitle: UILabel = {
-    let label = UILabel()
-    label.textColor = .ypGray
-    label.text = categorySubTitle
-    label.font = .systemFont(ofSize: 17)
-    label.translatesAutoresizingMaskIntoConstraints = false
-    return label
+        let label = UILabel()
+        label.textColor = .ypGray
+        label.text = categorySubTitle
+        label.font = .systemFont(ofSize: 16)
+        label.translatesAutoresizingMaskIntoConstraints = false
+        return label
     }()
-    
     
     private lazy var scheduleButton: UIButton = {
         let button = UIButton(type: .system)
@@ -176,18 +175,9 @@ class CreateEventVC: UIViewController {
         let label = UILabel()
         label.textColor = .black
         label.text = "Расписание"
-        label.font = .systemFont(ofSize: 17)
+        label.font = .systemFont(ofSize: 16)
         label.translatesAutoresizingMaskIntoConstraints = false
         return label
-    }()
-    
-    private lazy var scheduleButtonTitleSecond: UILabel = {
-    let label = UILabel()
-    label.textColor = .black
-    label.text = "Расписание"
-    label.font = .systemFont(ofSize: 17)
-    label.translatesAutoresizingMaskIntoConstraints = false
-    return label
     }()
     
     private lazy var scheduleButtonSubTitle: UILabel = {
@@ -199,12 +189,12 @@ class CreateEventVC: UIViewController {
         return label
     }()
     
-    private lazy var emojiColorCollectionView: UICollectionView = {
+    private lazy var emojiAndColorCollectionView: UICollectionView = {
         let collectionView = UICollectionView(
             frame: .zero,
             collectionViewLayout: UICollectionViewFlowLayout())
-        collectionView.register(EmojiColorCollectionViewCell.self, forCellWithReuseIdentifier: EmojiColorCollectionViewCell.identifier)
-        collectionView.register(EmojiColorSupplementaryView.self, forSupplementaryViewOfKind: UICollectionView.elementKindSectionHeader, withReuseIdentifier: EmojiColorSupplementaryView.identifier)
+        collectionView.register(EmojiAndColorCollectionViewCell.self, forCellWithReuseIdentifier: EmojiAndColorCollectionViewCell.identifier)
+        collectionView.register(EmojiAndColorSupplementaryView.self, forSupplementaryViewOfKind: UICollectionView.elementKindSectionHeader, withReuseIdentifier: EmojiAndColorSupplementaryView.identifier)
         collectionView.translatesAutoresizingMaskIntoConstraints = false
         collectionView.delegate = self
         collectionView.dataSource = self
@@ -256,12 +246,11 @@ class CreateEventVC: UIViewController {
         view.backgroundColor = .white
         addSubviews()
         setupLayout()
-        emojiColorCollectionView.allowsMultipleSelection = true
-        updateCategoryButton()
+        emojiAndColorCollectionView.allowsMultipleSelection = true
     }
     
     func updateCreateEventButton() {
-        createEventButton.isEnabled = textField.text?.isEmpty == false && selectedColor != nil && !selectedEmoji.isEmpty
+        createEventButton.isEnabled = textField.text?.isEmpty == false && selectedColor != nil && !selectedEmoji.isEmpty && category != nil
         if event == .regular {
             createEventButton.isEnabled = createEventButton.isEnabled && !schedule.isEmpty
         }
@@ -274,8 +263,15 @@ class CreateEventVC: UIViewController {
     }
     
     @objc func createEventButtonAction() {
-        let tracker = Tracker(id: UUID(), name: textField.text ?? "", color: selectedColor, emoji: selectedEmoji, schedule: schedule)
-        delegate?.createTracker(tracker, categoryName: "Важное")
+        var tracker: Tracker?
+        if event == .regular {
+            tracker = Tracker(id: UUID(), name: textField.text ?? "", color: selectedColor, emoji: selectedEmoji, schedule: schedule)
+        } else {
+            schedule = WeekDay.allCases
+            tracker = Tracker(id: UUID(), name: textField.text ?? "", color: selectedColor, emoji: selectedEmoji, schedule: schedule)
+        }
+        guard let tracker = tracker else { return }
+        delegate?.createTracker(tracker, categoryName: category?.name ?? "Без категории")
         dismiss(animated: true)
     }
     
@@ -284,14 +280,14 @@ class CreateEventVC: UIViewController {
     }
     
     @objc private func categoryButtonAction() {
-        let categoryVC = CategoryVC()
+        let categoryVC = CategoryListView(delegate: self, selectedCategory: category)
         present(categoryVC, animated: true)
-        categorySubTitle = "Важное"
     }
     
     @objc private func scheduleButtonAction() {
         let scheduleVC = ScheduleVC()
         scheduleVC.delegate = self
+        scheduleVC.schedule = schedule
         present(scheduleVC, animated: true)
     }
     
@@ -309,7 +305,8 @@ class CreateEventVC: UIViewController {
             scheduleButton.addSubview(forwardImage2)
         }
         updateScheduleButton()
-        scrollView.addSubview(emojiColorCollectionView)
+        updateCategoryButton()
+        scrollView.addSubview(emojiAndColorCollectionView)
         scrollView.addSubview(buttonBackgroundView)
         buttonBackgroundView.addSubview(createEventButton)
         buttonBackgroundView.addSubview(cancelButton)
@@ -351,12 +348,12 @@ class CreateEventVC: UIViewController {
             forwardImage1.trailingAnchor.constraint(equalTo: categoryButton.trailingAnchor, constant: -24),
             forwardImage1.centerYAnchor.constraint(equalTo: categoryButton.centerYAnchor),
             
-            emojiColorCollectionView.topAnchor.constraint(equalTo: createEventView.bottomAnchor, constant: 22),
-            emojiColorCollectionView.bottomAnchor.constraint(equalTo: buttonBackgroundView.topAnchor),
-            emojiColorCollectionView.leadingAnchor.constraint(equalTo: scrollView.leadingAnchor, constant: 16),
-            emojiColorCollectionView.trailingAnchor.constraint(equalTo: scrollView.trailingAnchor, constant: -16),
-            emojiColorCollectionView.widthAnchor.constraint(equalToConstant: scrollView.bounds.width - 32),
-            emojiColorCollectionView.heightAnchor.constraint(equalToConstant: 400),
+            emojiAndColorCollectionView.topAnchor.constraint(equalTo: createEventView.bottomAnchor, constant: 22),
+            emojiAndColorCollectionView.bottomAnchor.constraint(equalTo: buttonBackgroundView.topAnchor),
+            emojiAndColorCollectionView.leadingAnchor.constraint(equalTo: scrollView.leadingAnchor, constant: 16),
+            emojiAndColorCollectionView.trailingAnchor.constraint(equalTo: scrollView.trailingAnchor, constant: -16),
+            emojiAndColorCollectionView.widthAnchor.constraint(equalToConstant: scrollView.bounds.width - 32),
+            emojiAndColorCollectionView.heightAnchor.constraint(equalToConstant: 400),
             
             buttonBackgroundView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
             buttonBackgroundView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
@@ -393,46 +390,45 @@ class CreateEventVC: UIViewController {
     }
     
     func updateScheduleButton() {
-    if scheduleSubTitle == "" {
-    scheduleButton.addSubview(scheduleButtonTitle)
-    NSLayoutConstraint.activate([
-    scheduleButtonTitle.centerYAnchor.constraint(equalTo: scheduleButton.centerYAnchor),
-    scheduleButtonTitle.leadingAnchor.constraint(equalTo: scheduleButton.leadingAnchor, constant: 16)
-    ])
-    } else {
-    scheduleButtonTitle.isHidden = true
-    scheduleButton.addSubview(scheduleButtonTitleSecond)
-    scheduleButton.addSubview(scheduleButtonSubTitle)
-    NSLayoutConstraint.activate([
-    scheduleButtonTitleSecond.leadingAnchor.constraint(equalTo: scheduleButton.leadingAnchor, constant: 16),
-    scheduleButtonTitleSecond.topAnchor.constraint(equalTo: scheduleButton.topAnchor, constant: 15),
-    scheduleButtonSubTitle.leadingAnchor.constraint(equalTo: scheduleButton.leadingAnchor, constant: 16),
-    scheduleButtonSubTitle.topAnchor.constraint(equalTo: scheduleButton.topAnchor, constant: 39)
-    ])
-    scheduleButtonSubTitle.text = scheduleSubTitle
+        if scheduleSubTitle == "" {
+            scheduleButton.addSubview(scheduleButtonTitle)
+            NSLayoutConstraint.activate([
+                scheduleButtonTitle.centerYAnchor.constraint(equalTo: scheduleButton.centerYAnchor),
+                scheduleButtonTitle.leadingAnchor.constraint(equalTo: scheduleButton.leadingAnchor, constant: 16)
+            ])
+            scheduleButtonSubTitle.isHidden = true
+        } else {
+            scheduleButton.addSubview(scheduleButtonTitle)
+            scheduleButton.addSubview(scheduleButtonSubTitle)
+            NSLayoutConstraint.activate([
+                scheduleButtonTitle.leadingAnchor.constraint(equalTo: scheduleButton.leadingAnchor, constant: 16),
+                scheduleButtonTitle.topAnchor.constraint(equalTo: scheduleButton.topAnchor, constant: 15),
+                scheduleButtonSubTitle.leadingAnchor.constraint(equalTo: scheduleButton.leadingAnchor, constant: 16),
+                scheduleButtonSubTitle.bottomAnchor.constraint(equalTo: scheduleButton.bottomAnchor, constant: -13)
+            ])
+            scheduleButtonSubTitle.text = scheduleSubTitle
+            scheduleButtonSubTitle.isHidden = false
         }
     }
     
     func updateCategoryButton() {
-    if categorySubTitle == "" {
-    categoryButton.addSubview(categoryButtonTitle)
-    NSLayoutConstraint.activate([
-    categoryButtonTitle.centerYAnchor.constraint(equalTo: categoryButton.centerYAnchor),
-    categoryButtonTitle.leadingAnchor.constraint(equalTo: categoryButton.leadingAnchor, constant: 16)
-    
-    ])
-    } else {
-    categoryButtonTitle.isHidden = true
-    categoryButton.addSubview(categoryButtonTitleSecond)
-    categoryButton.addSubview(categoryButtonSubTitle)
-    NSLayoutConstraint.activate([
-    categoryButtonTitleSecond.leadingAnchor.constraint(equalTo: categoryButton.leadingAnchor, constant: 16),
-    categoryButtonTitleSecond.topAnchor.constraint(equalTo: categoryButton.topAnchor, constant: 15),
-    categoryButtonSubTitle.leadingAnchor.constraint(equalTo: categoryButton.leadingAnchor, constant: 16),
-    categoryButtonSubTitle.topAnchor.constraint(equalTo: categoryButton.topAnchor, constant: 39)
-    ])
-    categoryButtonSubTitle.text = categorySubTitle
-    }
+        if categorySubTitle == "" {
+            categoryButton.addSubview(categoryButtonTitle)
+            NSLayoutConstraint.activate([
+                categoryButtonTitle.centerYAnchor.constraint(equalTo: categoryButton.centerYAnchor),
+                categoryButtonTitle.leadingAnchor.constraint(equalTo: categoryButton.leadingAnchor, constant: 16)
+            ])
+        } else {
+            categoryButton.addSubview(categoryButtonTitle)
+            categoryButton.addSubview(categoryButtonSubTitle)
+            NSLayoutConstraint.activate([
+                categoryButtonTitle.leadingAnchor.constraint(equalTo: categoryButton.leadingAnchor, constant: 16),
+                categoryButtonTitle.topAnchor.constraint(equalTo: categoryButton.topAnchor, constant: 15),
+                categoryButtonSubTitle.leadingAnchor.constraint(equalTo: categoryButton.leadingAnchor, constant: 16),
+                categoryButtonSubTitle.bottomAnchor.constraint(equalTo: categoryButton.bottomAnchor, constant: -13)
+            ])
+            categoryButtonSubTitle.text = categorySubTitle
+        }
     }
     
     @objc func textFieldChanged() {
@@ -480,6 +476,15 @@ extension CreateEventVC: ScheduleVCDelegate {
     }
 }
 
+extension CreateEventVC: CategoryListViewModelDelegate {
+    func createCategory(category: TrackerCategoryModel) {
+        self.category = category
+        let categoryString = category.name
+        categorySubTitle = categoryString
+        updateCategoryButton()
+    }
+}
+
 extension CreateEventVC: UICollectionViewDataSource {
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         var returnValue = Int()
@@ -494,7 +499,7 @@ extension CreateEventVC: UICollectionViewDataSource {
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let section = indexPath.section
         
-        guard let cell = emojiColorCollectionView.dequeueReusableCell(withReuseIdentifier: "emojiColorCollectionViewCell", for: indexPath) as? EmojiColorCollectionViewCell
+        guard let cell = emojiAndColorCollectionView.dequeueReusableCell(withReuseIdentifier: "emojiAndColorCollectionViewCell", for: indexPath) as? EmojiAndColorCollectionViewCell
         else {
             return UICollectionViewCell()
         }
@@ -517,17 +522,16 @@ extension CreateEventVC: UICollectionViewDataSource {
 extension CreateEventVC: UICollectionViewDelegate {
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         let section = indexPath.section
-        let cell = collectionView.cellForItem(at: indexPath) as? EmojiColorCollectionViewCell
+        let cell = collectionView.cellForItem(at: indexPath) as? EmojiAndColorCollectionViewCell
         if section == 0 {
             if selectedEmojiCell != nil {
                 collectionView.deselectItem(at: selectedEmojiCell!, animated: true)
                 collectionView.cellForItem(at: selectedEmojiCell!)?.backgroundColor = .white
             }
-            cell?.backgroundColor = .ypLightGray
+            cell?.backgroundColor = .lightGray
             selectedEmoji = cell?.emojiLabel.text ?? ""
             selectedEmojiCell = indexPath
-        } else if indexPath.section == 1 {
-
+        } else if section == 1 {
             if selectedColorCell != nil {
                 collectionView.deselectItem(at: selectedColorCell!, animated: true)
                 collectionView.cellForItem(at: selectedColorCell!)?.layer.borderWidth = 0
@@ -535,16 +539,13 @@ extension CreateEventVC: UICollectionViewDelegate {
             cell?.layer.borderWidth = 3
             cell?.layer.cornerRadius = 8
             selectedColor = cell?.colorView.backgroundColor ?? nil
+            cell?.layer.borderColor = selectedColor?.withAlphaComponent(0.3).cgColor
             selectedColorCell = indexPath
-
-            if let selectedColor = selectedColor {
-                cell?.layer.borderColor = selectedColor.cgColor
-            }
         }
     }
     
     func collectionView(_ collectionView: UICollectionView, didDeselectItemAt indexPath: IndexPath) {
-        let cell = collectionView.cellForItem(at: indexPath) as? EmojiColorCollectionViewCell
+        let cell = collectionView.cellForItem(at: indexPath) as? EmojiAndColorCollectionViewCell
         collectionView.deselectItem(at: indexPath, animated: true)
         cell?.backgroundColor = .white
         cell?.layer.borderWidth = 0
@@ -600,7 +601,7 @@ extension CreateEventVC: UICollectionViewDelegateFlowLayout {
             id = ""
         }
         
-        guard let view = emojiColorCollectionView.dequeueReusableSupplementaryView(ofKind: kind, withReuseIdentifier: id, for: indexPath) as? EmojiColorSupplementaryView else { return UICollectionReusableView() }
+        guard let view = emojiAndColorCollectionView.dequeueReusableSupplementaryView(ofKind: kind, withReuseIdentifier: id, for: indexPath) as? EmojiAndColorSupplementaryView else { return UICollectionReusableView() }
         let section = indexPath.section
         if section == 0 {
             view.titleLabel.text = collectionViewHeader[0]
