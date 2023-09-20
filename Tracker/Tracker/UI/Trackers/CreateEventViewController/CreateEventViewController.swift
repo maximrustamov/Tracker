@@ -65,7 +65,7 @@ class CreateEventVC: UIViewController {
     
     private lazy var scrollView: UIScrollView = {
         let scrollView = UIScrollView()
-        scrollView.backgroundColor = .white
+        scrollView.backgroundColor = .ypWhite
         scrollView.frame = view.bounds
         scrollView.contentSize = contentSize
         scrollView.translatesAutoresizingMaskIntoConstraints = false
@@ -73,8 +73,14 @@ class CreateEventVC: UIViewController {
     }()
     
     private var contentSize: CGSize {
-        CGSize(width: view.frame.width, height: view.frame.height + 400)
+        CGSize(width: view.frame.width, height: view.frame.height + 450)
     }
+    
+    private lazy var contentView: UIView = {
+        let contentView = UIView()
+        contentView.translatesAutoresizingMaskIntoConstraints = false
+        return contentView
+    }()
     
     private lazy var label: UILabel = {
         let label = UILabel()
@@ -247,6 +253,7 @@ class CreateEventVC: UIViewController {
         addSubviews()
         setupLayout()
         emojiAndColorCollectionView.allowsMultipleSelection = true
+        self.textField.delegate = self
     }
     
     func updateCreateEventButton() {
@@ -280,7 +287,8 @@ class CreateEventVC: UIViewController {
     }
     
     @objc private func categoryButtonAction() {
-        let categoryVC = CategoryListView(delegate: self, selectedCategory: category)
+        let categoryViewModel = CategoryListViewModel(delegate: self, selectedCategory: category)
+        let categoryVC = CategoryListView(viewModel: categoryViewModel)
         present(categoryVC, animated: true)
     }
     
@@ -293,6 +301,7 @@ class CreateEventVC: UIViewController {
     
     private func addSubviews() {
         view.addSubview(scrollView)
+        scrollView.addSubview(contentView)
         scrollView.addSubview(label)
         scrollView.addSubview(textField)
         scrollView.addSubview(errorLabel)
@@ -316,15 +325,24 @@ class CreateEventVC: UIViewController {
         let createEventViewHeight: CGFloat = event == .regular ? 150 : 75
         heightAnchor = errorLabel.heightAnchor.constraint(equalToConstant: 0)
         var constraints = [
-            label.centerXAnchor.constraint(equalTo: scrollView.centerXAnchor),
-            label.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 27),
-            label.heightAnchor.constraint(equalToConstant: 25),
-            label.widthAnchor.constraint(equalToConstant: 250),
-            
             scrollView.topAnchor.constraint(equalTo: view.topAnchor),
             scrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
             scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            
+            contentView.topAnchor.constraint(equalTo: scrollView.topAnchor),
+            contentView.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor),
+            contentView.leadingAnchor.constraint(equalTo: scrollView.leadingAnchor),
+            contentView.trailingAnchor.constraint(equalTo: scrollView.trailingAnchor),
+            contentView.centerXAnchor.constraint(equalTo: scrollView.centerXAnchor),
+            contentView.centerYAnchor.constraint(equalTo: scrollView.centerYAnchor),
+            
+            label.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
+            label.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 27),
+            label.heightAnchor.constraint(equalToConstant: 25),
+            label.widthAnchor.constraint(equalToConstant: 250),
+            
+
             
             textField.topAnchor.constraint(equalTo: label.bottomAnchor, constant: 38),
             textField.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
@@ -332,7 +350,7 @@ class CreateEventVC: UIViewController {
             textField.heightAnchor.constraint(equalToConstant: 75),
             
             errorLabel.topAnchor.constraint(equalTo: textField.bottomAnchor, constant: 0),
-            errorLabel.centerXAnchor.constraint(equalTo: scrollView.centerXAnchor),
+            errorLabel.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
             heightAnchor!,
             
             createEventView.topAnchor.constraint(equalTo: errorLabel.bottomAnchor, constant: 16),
@@ -350,9 +368,9 @@ class CreateEventVC: UIViewController {
             
             emojiAndColorCollectionView.topAnchor.constraint(equalTo: createEventView.bottomAnchor, constant: 22),
             emojiAndColorCollectionView.bottomAnchor.constraint(equalTo: buttonBackgroundView.topAnchor),
-            emojiAndColorCollectionView.leadingAnchor.constraint(equalTo: scrollView.leadingAnchor, constant: 16),
-            emojiAndColorCollectionView.trailingAnchor.constraint(equalTo: scrollView.trailingAnchor, constant: -16),
-            emojiAndColorCollectionView.widthAnchor.constraint(equalToConstant: scrollView.bounds.width - 32),
+            emojiAndColorCollectionView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
+            emojiAndColorCollectionView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
+            emojiAndColorCollectionView.widthAnchor.constraint(equalToConstant: contentView.bounds.width - 32),
             emojiAndColorCollectionView.heightAnchor.constraint(equalToConstant: 400),
             
             buttonBackgroundView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
@@ -389,6 +407,8 @@ class CreateEventVC: UIViewController {
         NSLayoutConstraint.activate(constraints)
     }
     
+    
+    
     func updateScheduleButton() {
         if scheduleSubTitle == "" {
             scheduleButton.addSubview(scheduleButtonTitle)
@@ -398,6 +418,7 @@ class CreateEventVC: UIViewController {
             ])
             scheduleButtonSubTitle.isHidden = true
         } else {
+            scheduleButtonTitle.removeFromSuperview()
             scheduleButton.addSubview(scheduleButtonTitle)
             scheduleButton.addSubview(scheduleButtonSubTitle)
             NSLayoutConstraint.activate([
@@ -419,13 +440,14 @@ class CreateEventVC: UIViewController {
                 categoryButtonTitle.leadingAnchor.constraint(equalTo: categoryButton.leadingAnchor, constant: 16)
             ])
         } else {
+            categoryButtonTitle.removeFromSuperview()
             categoryButton.addSubview(categoryButtonTitle)
             categoryButton.addSubview(categoryButtonSubTitle)
             NSLayoutConstraint.activate([
-                categoryButtonTitle.leadingAnchor.constraint(equalTo: categoryButton.leadingAnchor, constant: 16),
                 categoryButtonTitle.topAnchor.constraint(equalTo: categoryButton.topAnchor, constant: 15),
+                categoryButtonTitle.leadingAnchor.constraint(equalTo: categoryButton.leadingAnchor, constant: 16),
                 categoryButtonSubTitle.leadingAnchor.constraint(equalTo: categoryButton.leadingAnchor, constant: 16),
-                categoryButtonSubTitle.bottomAnchor.constraint(equalTo: categoryButton.bottomAnchor, constant: -13)
+                categoryButtonSubTitle.bottomAnchor.constraint(equalTo: categoryButton.bottomAnchor, constant: -14)
             ])
             categoryButtonSubTitle.text = categorySubTitle
         }
@@ -454,6 +476,15 @@ extension UITextField {
 }
 
 extension CreateEventVC: UITextFieldDelegate {
+    
+    internal func textFieldShouldReturn(_ textField: UITextField) -> Bool {
+        return textField.resignFirstResponder()
+    }
+    
+    internal override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        self.view.endEditing(true)
+    }
+    
     func textField(
         _ textField: UITextField,
         shouldChangeCharactersIn range: NSRange,

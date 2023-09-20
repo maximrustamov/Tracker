@@ -352,6 +352,8 @@
 			dependencies = (
 			);
 			name = Tracker;
+			packageProductDependencies = (
+			);
 			productName = Tracker;
 			productReference = 5618AAB32A783C900053BAE3 /* Tracker.app */;
 			productType = "com.apple.product-type.application";
@@ -424,6 +426,8 @@
 				Base,
 			);
 			mainGroup = 5618AAAA2A783C900053BAE3;
+			packageReferences = (
+			);
 			productRefGroup = 5618AAB42A783C900053BAE3 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";

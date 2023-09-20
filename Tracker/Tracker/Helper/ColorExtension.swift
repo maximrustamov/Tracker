@@ -10,6 +10,7 @@ extension UIColor {
     static var ypRed: UIColor { UIColor(named: "ypRed") ?? UIColor.red }
     static var ypBlack: UIColor { UIColor(named: "ypBlack") ?? UIColor.black }
     static var ypBlue: UIColor { UIColor(named: "ypBlue") ?? UIColor.blue }
+    static var ypWhite: UIColor { UIColor(named: "ypWhite") ?? UIColor.white }
     static var color1: UIColor { UIColor(named: "Color1") ?? UIColor.red }
     static var color2: UIColor { UIColor(named: "Color2") ?? UIColor.red }
     static var color3: UIColor { UIColor(named: "Color3") ?? UIColor.red }

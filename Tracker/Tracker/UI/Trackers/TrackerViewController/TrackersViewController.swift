@@ -1,5 +1,6 @@
 import UIKit
 
+
 final class TrackersViewController: UIViewController {
     private let trackerCategoryStore = TrackerCategoryStore()
     private let trackerRecordStore = TrackerRecordStore()
@@ -142,7 +143,13 @@ final class TrackersViewController: UIViewController {
         view.addSubview(cancelEditingButton)
         view.addSubview(collectionView)
     }
+    internal func textFieldShouldReturn(_ textField: UITextField) -> Bool {
+        return searchTextField.resignFirstResponder()
+    }
     
+    internal override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        self.view.endEditing(true)
+    }
     private func setupLayoutSearchTextFieldAndButton() {
         widthAnchor = cancelEditingButton.widthAnchor.constraint(equalToConstant: 0)
         

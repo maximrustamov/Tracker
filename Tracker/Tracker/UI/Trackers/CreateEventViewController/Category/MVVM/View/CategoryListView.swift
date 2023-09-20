@@ -53,11 +53,11 @@ class CategoryListView: UIViewController {
         return tableView
     }()
     
-    init(delegate: CategoryListViewModelDelegate?, selectedCategory: TrackerCategoryModel?) {
-        viewModel = CategoryListViewModel(delegate: delegate, selectedCategory: selectedCategory)
-        super.init(nibName: nil, bundle: nil)
-        viewModel.onChange = self.tableView.reloadData
-    }
+    init(viewModel: CategoryListViewModel) {
+           self.viewModel = viewModel
+           super.init(nibName: nil, bundle: nil)
+           viewModel.onChange = self.tableView.reloadData
+       }
     
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
@@ -187,6 +187,9 @@ extension CategoryListView: UITableViewDataSource {
         } else {
             categoryCell.separatorInset = UIEdgeInsets(top: 0, left: 16, bottom: 0, right: 16)
             categoryCell.contentView.layer.cornerRadius = 0
+        }
+        if viewModel.categories.count == 1 {
+            categoryCell.contentView.layer.maskedCorners = [.layerMaxXMinYCorner, .layerMinXMinYCorner, .layerMaxXMaxYCorner, .layerMinXMaxYCorner]
         }
         categoryCell.checkmarkImage.isHidden = viewModel.selectedCategory?.name != categoryName
         categoryCell.selectionStyle = .none

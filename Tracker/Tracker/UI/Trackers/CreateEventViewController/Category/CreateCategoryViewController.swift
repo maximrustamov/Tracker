@@ -4,7 +4,7 @@ protocol CreateCategoryVCDelegate {
     func createdCategory(_ category: TrackerCategoryModel)
 }
 
-class CreateCategoryVC: UIViewController {
+class CreateCategoryVC: UIViewController, UITextFieldDelegate {
     var delegate: CreateCategoryVCDelegate?
     
     private lazy var titleLabel: UILabel = {
@@ -69,6 +69,7 @@ class CreateCategoryVC: UIViewController {
         view.backgroundColor = .white
         addSubviews()
         setupLayout()
+        self.textField.delegate = self
     }
     
     private func addSubviews() {
@@ -93,5 +94,12 @@ class CreateCategoryVC: UIViewController {
             addCategoryButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
             addCategoryButton.heightAnchor.constraint(equalToConstant: 60),
        ])
+    }
+    internal func textFieldShouldReturn(_ textField: UITextField) -> Bool {
+        return textField.resignFirstResponder()
+    }
+    
+    internal override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        self.view.endEditing(true)
     }
 }

@@ -52,7 +52,7 @@ final class TrackersCollectionViewCell: UICollectionViewCell {
     
     private lazy var checkButton: UIButton = {
         let checkButton = UIButton()
-        let image = UIImage(named: "GreenPlus")
+        let image = UIImage(systemName: "plus")
         checkButton.setImage(image, for: .normal)
         checkButton.addTarget(self, action: #selector(didTapCheckButton), for: .touchUpInside)
         checkButton.backgroundColor = .white
@@ -84,7 +84,7 @@ final class TrackersCollectionViewCell: UICollectionViewCell {
             emojiView.topAnchor.constraint(equalTo: trackerView.topAnchor, constant: 12),
             emojiView.leadingAnchor.constraint(equalTo: trackerView.leadingAnchor, constant: 12),
             
-            emojiLabel.centerYAnchor.constraint(equalTo: emojiView.centerYAnchor) ,
+            emojiLabel.centerXAnchor.constraint(equalTo: emojiView.centerXAnchor),
             emojiLabel.centerYAnchor.constraint(equalTo: emojiView.centerYAnchor),
             
             trackerNameLabel.topAnchor.constraint(equalTo: trackerView.topAnchor, constant: 44),
@@ -133,7 +133,7 @@ final class TrackersCollectionViewCell: UICollectionViewCell {
         checkButton.backgroundColor = color
         emojiLabel.text = emoji
         isCompletedToday = isCompleted
-        checkButton.setImage(isCompletedToday ? UIImage(systemName: "checkmark")! : UIImage(systemName: "GreenPlus")!, for: .normal)
+        checkButton.setImage(isCompletedToday ? UIImage(systemName: "checkmark")! : UIImage(systemName: "plus")!, for: .normal)
         if isCompletedToday == true {
             checkButton.alpha = 0.5
         } else {
